@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Khasanov[Marl1ne]",
+  "classifications": [ "Web", "Razor", "Library", "Blazor", "MudBlazor", "AdminPage" ],
+  "identity": "MyRazorLibraryTemplate",
+  "name": "AdminPageTemplate",
+  "shortName": "razorlib",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "LibraryRazor",
+  "preferNameDirectory": true
+}
