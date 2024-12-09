@@ -11,9 +11,9 @@ Welcome to your new app.
     <p>Вернули! Вернули</p>
 }
 
-
 <AdminPage Items="@Elements"
-    AvailableRoles="@AllSystemRoles"
+           OnRolesChanged="@(async (item, roles) => { await HandleRoleEditSumbit(item, roles); })"
+           AvailableRoles="@AllSystemRoles"
            OnEditSubmit="@(async (Album item) => await HandleEditSubmit(item))"
            OnDeleteClick="@(async (Album item) => await HandleDelete(item))" />
 
@@ -56,16 +56,33 @@ Welcome to your new app.
         var index = Elements.FindIndex(e => e.AlbumId == updatedItem.AlbumId);
         if (index != -1)
         {
+
             Elements[index] = updatedItem;
+            isBack = true;
             StateHasChanged(); // Это нужно оставить
         }
         Console.WriteLine($"Обновлен элемент с ID: {updatedItem.AlbumId}");
     }
 
-private async Task HandleDelete(Album itemToDelete)
+    private async Task HandleDelete(Album itemToDelete)
     {
         Elements.Remove(itemToDelete);
+        isBack = true;
         StateHasChanged(); // Это нужно оставить
         Console.WriteLine($"Удален элемент с ID: {itemToDelete.AlbumId}");
     }
+
+    private async Task HandleRoleEditSumbit(Album item, List<string> roles)
+    {
+        isBack = true;
+        // Логика обновления ролей для элемента
+        var albumToUpdate = Elements.FirstOrDefault(a => a.AlbumId == item.AlbumId);
+        if (albumToUpdate != null)
+        {
+            albumToUpdate.Roles = roles;
+        }
+
+        StateHasChanged();
+    }
+    
 }

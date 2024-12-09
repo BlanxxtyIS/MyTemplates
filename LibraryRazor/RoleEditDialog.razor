@@ -37,7 +37,7 @@
     public IEnumerable<string> ActiveRoles { get; set; } = new List<string>();
 
     [Parameter]
-    public EventCallback<string> OnRoleEditSumbit { get; set; }
+    public EventCallback<List<string>> OnRoleEditSumbit { get; set; }
 
     [CascadingParameter]
     private MudDialogInstance MudDialog { get; set; }
@@ -61,6 +61,10 @@
     {
         var selectedRoles = SelectedRoles.ToList();
         MudDialog.Close(DialogResult.Ok(selectedRoles));
+        if (OnRoleEditSumbit.HasDelegate)
+        {
+            OnRoleEditSumbit.InvokeAsync(selectedRoles);
+        }
     }
 
     private void Cancel() => MudDialog.Cancel();
