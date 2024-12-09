@@ -1,0 +1,36 @@
+@typeparam TItem where TItem : class
+
+<MudDialog>
+    <TitleContent>
+        Удалить элемент?
+    </TitleContent>
+@*     <DialogContent>
+        Удалить элемент?
+    </DialogContent> *@
+    <DialogActions>
+        <MudButton OnClick="Cancel">Назад</MudButton>
+        <MudButton Color="Color.Error" OnClick="Submit">Удалить</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public TItem Item { get; set; }
+
+    [Parameter]
+    public EventCallback<TItem> OnSubmit { get; set; }
+
+    private void Submit()
+    {
+        if (OnSubmit.HasDelegate)
+        {
+            OnSubmit.InvokeAsync(Item);
+        }
+        MudDialog.Close(DialogResult.Ok(Item));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

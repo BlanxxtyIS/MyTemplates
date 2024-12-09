@@ -1,0 +1,67 @@
+<MudDialog>
+    <TitleContent>
+        Редактирование ролей
+    </TitleContent>
+    <DialogContent>
+        @if (AvailableRoles != null && AvailableRoles.Any())
+        {
+            <MudList Clickable="true" Dense="true" T="string">
+                @foreach (var role in AvailableRoles)
+                {
+                    <MudListItem T="string" Dense="true">
+                        <MudCheckBox T="bool"
+                                     Checked="@(ActiveRoles.Contains(role))"
+                                     CheckedChanged="@((bool value) => OnRoleToggled(role, value))"
+                                     Label="@role"
+                                     Color="Color.Primary" />
+                    </MudListItem>
+                }
+            </MudList>
+        }
+        else
+        {
+            <MudText>Нет доступных ролей</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Назад</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Сохранить</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter]
+    public IEnumerable<string> AvailableRoles { get; set; } = new List<string>();
+
+    [Parameter]
+    public IEnumerable<string> ActiveRoles { get; set; } = new List<string>();
+
+    [Parameter]
+    public EventCallback<string> OnRoleEditSumbit { get; set; }
+
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    private HashSet<string> SelectedRoles;
+
+    protected override void OnInitialized()
+    {
+        SelectedRoles = new HashSet<string>(ActiveRoles);
+    }
+
+    private void OnRoleToggled(string role, bool value)
+    {
+        if (value)
+            SelectedRoles.Add(role);
+        else
+            SelectedRoles.Remove(role);
+    }
+
+    private void Submit()
+    {
+        var selectedRoles = SelectedRoles.ToList();
+        MudDialog.Close(DialogResult.Ok(selectedRoles));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

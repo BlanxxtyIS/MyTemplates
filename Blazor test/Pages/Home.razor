@@ -1,0 +1,71 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+@if(isBack)
+{
+    <p>Вернули! Вернули</p>
+}
+
+
+<AdminPage Items="@Elements"
+    AvailableRoles="@AllSystemRoles"
+           OnEditSubmit="@(async (Album item) => await HandleEditSubmit(item))"
+           OnDeleteClick="@(async (Album item) => await HandleDelete(item))" />
+
+@code {
+    private bool isBack { get; set; } = false;
+
+    private List<Album> Elements = new List<Album>();
+
+    private List<string> AllSystemRoles = new(); 
+
+    protected override void OnInitialized()
+    {
+        AllSystemRoles = new List<string>
+        {
+            "Admin",
+            "User",
+            "Editor",
+            "Manager",
+            "Viewer"
+        };
+
+        Elements = new List<Album>
+    {
+        new Album { AlbumId = 1, Name = "Element 1", Description = "Description 1", AuthorName = "AuthorName 1", TimeInMinutes = 420, Rating
+             = 1, Roles = new List<string> {"Admin", "Editor"} },
+        new Album { AlbumId = 2, Name = "Element 2", Description = "Description 2", AuthorName = "AuthorName 2", TimeInMinutes = 420, Rating
+             = 2, Roles = new List<string> {"Viewer", "Manager", "Editor"} },
+            new Album { AlbumId = 3, Name = "Element 3", Description = "Description 3", AuthorName = "AuthorName 3", TimeInMinutes = 420, Rating
+             = 3, Roles = new List<string> {"Viewer", "Editor"} },
+            new Album { AlbumId = 4, Name = "Element 4", Description = "Description 4", AuthorName = "AuthorName 4", TimeInMinutes = 420, Rating
+             = 4, Roles = new List<string> {"Manager", "Viewer"} },
+            new Album { AlbumId = 5, Name = "Element 5", Description = "Description 5", AuthorName = "AuthorName 5", TimeInMinutes = 420, Rating
+             = 5, Roles = new List<string> {"Manager", "Editor"} },
+        };
+    }
+
+
+    private async Task HandleEditSubmit(Album updatedItem)
+    {
+        var index = Elements.FindIndex(e => e.AlbumId == updatedItem.AlbumId);
+        if (index != -1)
+        {
+            Elements[index] = updatedItem;
+            StateHasChanged(); // Это нужно оставить
+        }
+        Console.WriteLine($"Обновлен элемент с ID: {updatedItem.AlbumId}");
+    }
+
+private async Task HandleDelete(Album itemToDelete)
+    {
+        Elements.Remove(itemToDelete);
+        StateHasChanged(); // Это нужно оставить
+        Console.WriteLine($"Удален элемент с ID: {itemToDelete.AlbumId}");
+    }
+}

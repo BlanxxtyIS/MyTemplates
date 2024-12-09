@@ -11,19 +11,27 @@
         {
             <PropertyColumn Property="@(x => prop.GetValue(x))" Title="@GetDisplayName(prop)" />
         }
+        
         <TemplateColumn CellClass="d-flex justify-end">
             <CellTemplate Context="context">
-                <MudStack Row>
-                    <MudButton Variant="Variant.Filled"
-                               StartIcon="@Icons.Material.Filled.Delete"
-                               Color="Color.Error"
+                <MudStack Row>     
+                    @if (HasRolesProperty()) {
+                    <MudButton StartIcon="@Icons.Material.Filled.Api"
+                               Variant="Variant.Filled"
+                               Color="Color.Success"
                                Size="Size.Small"
-                               OnClick="@(() => OnDeleteClick.InvokeAsync(context.Item))">Delete</MudButton>
+                               OnClick="@(() => OpenRoleDialog(context.Item))">Роли</MudButton>
+                    }
+                    <MudButton StartIcon="@Icons.Material.Filled.Delete"
+                               Variant="Variant.Filled" 
+                               Color="Color.Error" 
+                               Size="Size.Small"
+                               OnClick="@(() => OpenDeleteDialog(context.Item))">Удалить</MudButton>
                     <MudButton Variant="Variant.Filled"
                                StartIcon="@Icons.Material.Filled.Edit"
                                Color="Color.Info"
                                Size="Size.Small"
-                               OnClick="@(() => ShowEditDialog(context.Item))">Edit</MudButton>
+                               OnClick="@(() => ShowEditDialog(context.Item))">Изменить</MudButton>
                 </MudStack>
             </CellTemplate>
         </TemplateColumn>
@@ -34,6 +42,9 @@
     [Parameter, EditorRequired]
     public IEnumerable<TItem> Items { get; set; }
 
+    [Parameter, EditorRequired]
+    public IEnumerable<String> AvailableRoles { get; set; }
+
     [Parameter]
     public EventCallback<TItem> OnDeleteClick { get; set; }
 
@@ -41,11 +52,13 @@
     public EventCallback<TItem> OnEditSubmit { get; set; }
 
     [Parameter]
-    public string DialogTitle { get; set; } = "Edit Item";
+    public EventCallback<(TItem Item, List<string> Roles)> OnRolesChanged { get; set; }
 
     private IEnumerable<PropertyInfo> GetProperties()
     {
-        return typeof(TItem).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        return typeof(TItem)
+        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+        .Where(p => p.Name != "Roles");
     }
 
     private string GetDisplayName(PropertyInfo prop)
@@ -62,14 +75,71 @@
             { x => x.OnSubmit, OnEditSubmit }
         };
 
-        var dialog = await DialogService.ShowAsync<AdminDialog<TItem>>(DialogTitle, parameters);
+        var dialog = await DialogService.ShowAsync<AdminDialog<TItem>>("EDit Item", parameters);
         var result = await dialog.Result;
 
-        // Только если диалог был закрыт с OK, вызываем событие
         if (!result.Canceled)
         {
             await OnEditSubmit.InvokeAsync(editItem);
         }
+    }
+
+    private async Task OpenDeleteDialog(TItem item)
+    {
+        var deleteItem = item;
+        var parameters = new DialogParameters<DeleteDialog<TItem>>
+        {
+            { x => x.Item, deleteItem },
+            { x => x.OnSubmit, OnDeleteClick }
+        };
+        var dialog = await DialogService.ShowAsync<DeleteDialog<TItem>>("Delete Item", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await OnDeleteClick.InvokeAsync(deleteItem);
+        }
+    }
+
+    private async Task OpenRoleDialog(TItem item)
+    {
+        try
+        {
+            var rolesProperty = typeof(TItem).GetProperty("Roles");
+            var activeRoles = (rolesProperty?.GetValue(item) as List<string>) ?? new List<string>();
+
+            var parameters = new DialogParameters
+                {
+                    ["AvailableRoles"] = AvailableRoles,
+                    ["ActiveRoles"] = activeRoles
+                };
+
+            var dialog = await DialogService.ShowAsync<RoleEditDialog>("Редактирование ролей", parameters);
+            var result = await dialog.Result;
+
+            if (!result.Canceled && result.Data is List<string> selectedRoles)
+            {
+                rolesProperty?.SetValue(item, selectedRoles);
+
+                if (OnRolesChanged.HasDelegate)
+                {
+                    await OnRolesChanged.InvokeAsync((item, selectedRoles));
+                }
+
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in OpenRoleDialog: {ex.Message}");
+        }
+    }
+
+    private bool HasRolesProperty()
+    {
+        return typeof(TItem).GetProperty("Roles") != null &&
+               AvailableRoles != null &&
+               AvailableRoles.Any();
     }
 }
 
@@ -80,6 +150,8 @@
 @code {
     private List<Models> Elements = new List<Models>();
 
+    protected override void OnInitialized()
+    {
     Elements = new List<Models>
         {
             new Models { AlbumId = 1, Name = "Element 1", Description = "Description 1", AuthorName = "AuthorName 1", TimeInMinutes = 420, Rating
@@ -93,6 +165,7 @@
             new Models { AlbumId = 5, Name = "Element 5", Description = "Description 5", AuthorName = "AuthorName 5", TimeInMinutes = 420, Rating
              = 5},
         };
+    }
         
     private async Task HandleEditSubmit(Models updatedItem)
     {

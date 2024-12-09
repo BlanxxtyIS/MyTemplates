@@ -23,8 +23,8 @@
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit">Save</MudButton>
+        <MudButton OnClick="Cancel">Отменить</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Сохранить</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -36,7 +36,7 @@
     public TItem Item { get; set; }
 
     [Parameter]
-    public string Title { get; set; } = "Edit Item";
+    public string Title { get; set; } = "Редактировать";
 
     [Parameter]
     public EventCallback<TItem> OnSubmit { get; set; }
