@@ -9,15 +9,22 @@ Welcome to your new app.
 @if(isBack)
 {
     <p>Вернули! Вернули</p>
+    <ul>
+        @foreach (var i in roleees)
+        {
+            <li>@i</li>
+        }
+    </ul>
 }
 
 <AdminPage Items="@Elements"
-           OnRolesChanged="@(async (item, roles) => { await HandleRoleEditSumbit(item, roles); })"
+           OnRolesChanged="@(async (Album item) => await HandleRoleEditSumbit(item))"
            AvailableRoles="@AllSystemRoles"
            OnEditSubmit="@(async (Album item) => await HandleEditSubmit(item))"
-           OnDeleteClick="@(async (Album item) => await HandleDelete(item))" />
+           OnBlockClick="@(async (Album item) => await HandBlocked(item))" />
 
 @code {
+    private List<string> roleees { get; set; }
     private bool isBack { get; set; } = false;
 
     private List<Album> Elements = new List<Album>();
@@ -64,7 +71,7 @@ Welcome to your new app.
         Console.WriteLine($"Обновлен элемент с ID: {updatedItem.AlbumId}");
     }
 
-    private async Task HandleDelete(Album itemToDelete)
+    private async Task HandBlocked(Album itemToDelete)
     {
         Elements.Remove(itemToDelete);
         isBack = true;
@@ -72,17 +79,15 @@ Welcome to your new app.
         Console.WriteLine($"Удален элемент с ID: {itemToDelete.AlbumId}");
     }
 
-    private async Task HandleRoleEditSumbit(Album item, List<string> roles)
+    private async Task HandleRoleEditSumbit(Album item)
     {
-        isBack = true;
-        // Логика обновления ролей для элемента
         var albumToUpdate = Elements.FirstOrDefault(a => a.AlbumId == item.AlbumId);
         if (albumToUpdate != null)
         {
-            albumToUpdate.Roles = roles;
+            albumToUpdate.Roles = item.Roles;
+            roleees = item.Roles; 
+            isBack = true;
+            StateHasChanged();
         }
-
-        StateHasChanged();
     }
-    
 }

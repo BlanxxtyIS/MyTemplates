@@ -5,33 +5,40 @@
 @using MudBlazor
 @using System
 
-<MudDataGrid Items="@Items" Filterable="false" SortMode="@SortMode.None" Groupable="false">
+<ul>
+    @foreach (var i in testText)
+    {
+        <li>@i</li>
+    }
+</ul>
+
+<MudDataGrid Items="@Items" Filterable="false" SortMode="@SortMode.None" Groupable="false">    
     <Columns>
         @foreach (var prop in GetProperties())
         {
             <PropertyColumn Property="@(x => prop.GetValue(x))" Title="@GetDisplayName(prop)" />
         }
-        
         <TemplateColumn CellClass="d-flex justify-end">
             <CellTemplate Context="context">
-                <MudStack Row>     
-                    @if (HasRolesProperty()) {
-                    <MudButton StartIcon="@Icons.Material.Filled.Api"
-                               Variant="Variant.Filled"
-                               Color="Color.Success"
-                               Size="Size.Small"
-                               OnClick="@(() => OpenRoleDialog(context.Item))">Роли</MudButton>
+                <MudStack Row>
+                    @if (HasRolesProperty())
+                    {
+                        <MudButton StartIcon="@Icons.Material.Filled.Api"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Size="Size.Small"
+                                   OnClick="@(() => OpenRoleDialog(context.Item))">Р РѕР»Рё</MudButton>
                     }
                     <MudButton StartIcon="@Icons.Material.Filled.Delete"
-                               Variant="Variant.Filled" 
-                               Color="Color.Error" 
+                               Variant="Variant.Filled"
+                               Color="Color.Error"
                                Size="Size.Small"
-                               OnClick="@(() => OpenDeleteDialog(context.Item))">Удалить</MudButton>
+                               OnClick="@(() => OpenBlockDialog(context.Item))">Р—Р°Р±Р»РѕРєРёСЂРѕРІР°С‚СЊ</MudButton>
                     <MudButton Variant="Variant.Filled"
                                StartIcon="@Icons.Material.Filled.Edit"
                                Color="Color.Info"
                                Size="Size.Small"
-                               OnClick="@(() => ShowEditDialog(context.Item))">Изменить</MudButton>
+                               OnClick="@(() => ShowEditDialog(context.Item))">РР·РјРµРЅРёС‚СЊ</MudButton>
                 </MudStack>
             </CellTemplate>
         </TemplateColumn>
@@ -39,6 +46,8 @@
 </MudDataGrid>
 
 @code {
+    private List<string> testText = new();
+
     [Parameter, EditorRequired]
     public IEnumerable<TItem> Items { get; set; }
 
@@ -46,13 +55,18 @@
     public IEnumerable<String> AvailableRoles { get; set; }
 
     [Parameter]
-    public EventCallback<TItem> OnDeleteClick { get; set; }
+    public EventCallback<TItem> OnBlockClick { get; set; }
 
     [Parameter]
     public EventCallback<TItem> OnEditSubmit { get; set; }
 
     [Parameter]
-    public EventCallback<(TItem Item, List<string> Roles)> OnRolesChanged { get; set; }
+    public EventCallback<TItem> OnRolesChanged { get; set; }
+
+    private bool HasRolesProperty()
+    {
+        return typeof(TItem).GetProperty("Roles") != null;
+    }
 
     private IEnumerable<PropertyInfo> GetProperties()
     {
@@ -75,7 +89,7 @@
             { x => x.OnSubmit, OnEditSubmit }
         };
 
-        var dialog = await DialogService.ShowAsync<AdminDialog<TItem>>("EDit Item", parameters);
+        var dialog = await DialogService.ShowAsync<AdminDialog<TItem>>("Edit Item", parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled)
@@ -84,62 +98,50 @@
         }
     }
 
-    private async Task OpenDeleteDialog(TItem item)
+    private async Task OpenBlockDialog(TItem item)
     {
-        var deleteItem = item;
-        var parameters = new DialogParameters<DeleteDialog<TItem>>
+        var blockUser = item;
+        var parameters = new DialogParameters<BlockDialog<TItem>>
         {
-            { x => x.Item, deleteItem },
-            { x => x.OnSubmit, OnDeleteClick }
+            { x => x.Item, blockUser },
+            { x => x.OnSubmit, OnBlockClick }
         };
-        var dialog = await DialogService.ShowAsync<DeleteDialog<TItem>>("Delete Item", parameters);
+        var dialog = await DialogService.ShowAsync<BlockDialog<TItem>>("Delete Item", parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled)
         {
-            await OnDeleteClick.InvokeAsync(deleteItem);
+            await OnBlockClick.InvokeAsync(blockUser);
         }
     }
 
+    // ... existing code ...
     private async Task OpenRoleDialog(TItem item)
     {
-        try
-        {
-            var rolesProperty = typeof(TItem).GetProperty("Roles");
-            var activeRoles = (rolesProperty?.GetValue(item) as List<string>) ?? new List<string>();
+        var currentRoles = (item.GetType().GetProperty("Roles")?.GetValue(item) as IEnumerable<string>) ?? new List<string>();
 
-            var parameters = new DialogParameters
-                {
-                    ["AvailableRoles"] = AvailableRoles,
-                    ["ActiveRoles"] = activeRoles
-                };
-
-            var dialog = await DialogService.ShowAsync<RoleEditDialog>("Редактирование ролей", parameters);
-            var result = await dialog.Result;
-
-            if (!result.Canceled && result.Data is List<string> selectedRoles)
-            {
-                rolesProperty?.SetValue(item, selectedRoles);
-
-                if (OnRolesChanged.HasDelegate)
-                {
-                    await OnRolesChanged.InvokeAsync((item, selectedRoles));
-                }
-
-                StateHasChanged();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in OpenRoleDialog: {ex.Message}");
-        }
-    }
-
-    private bool HasRolesProperty()
+        var parameters = new DialogParameters<RoleEditDialog>
     {
-        return typeof(TItem).GetProperty("Roles") != null &&
-               AvailableRoles != null &&
-               AvailableRoles.Any();
+        { x => x.AvailableRoles, AvailableRoles },
+        { x => x.ActiveRoles, currentRoles }
+    };
+
+        var dialog = await DialogService.ShowAsync<RoleEditDialog>("Р РµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ СЂРѕР»РµР№", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            testText = (List<string>)result.Data;
+            var selectedRoles = (List<string>)result.Data;
+            var rolesProperty = item.GetType().GetProperty("Roles");
+            rolesProperty?.SetValue(item, selectedRoles);
+
+            // РЎРѕР·РґР°РµРј СЃС‚СЂРѕРєСѓ СЃ РІС‹Р±СЂР°РЅРЅС‹РјРё СЂРѕР»СЏРјРё
+            List<string> selectedRolesString =  selectedRoles;
+
+
+            await OnRolesChanged.InvokeAsync(item);
+        }
     }
 }
 
@@ -166,22 +168,22 @@
              = 5},
         };
     }
-        
+
     private async Task HandleEditSubmit(Models updatedItem)
     {
         var index = Elements.FindIndex(e => e.AlbumId == updatedItem.AlbumId);
         if (index != -1)
         {
             Elements[index] = updatedItem;
-            StateHasChanged(); // Это нужно оставить
+            StateHasChanged(); // Р­С‚Рѕ РЅСѓР¶РЅРѕ РѕСЃС‚Р°РІРёС‚СЊ
         }
-        Console.WriteLine($"Обновлен элемент с ID: {updatedItem.AlbumId}");
+        Console.WriteLine($"РћР±РЅРѕРІР»РµРЅ СЌР»РµРјРµРЅС‚ СЃ ID: {updatedItem.AlbumId}");
     }
 
     private async Task HandleDelete(Models itemToDelete)
     {
         Elements.Remove(itemToDelete);
-        StateHasChanged(); // Это нужно оставить
-        Console.WriteLine($"Удален элемент с ID: {itemToDelete.AlbumId}");
+        StateHasChanged(); // Р­С‚Рѕ РЅСѓР¶РЅРѕ РѕСЃС‚Р°РІРёС‚СЊ
+        Console.WriteLine($"РЈРґР°Р»РµРЅ СЌР»РµРјРµРЅС‚ СЃ ID: {itemToDelete.AlbumId}");
     }
 } *@

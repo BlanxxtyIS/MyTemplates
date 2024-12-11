@@ -42,11 +42,11 @@
     [CascadingParameter]
     private MudDialogInstance MudDialog { get; set; }
 
-    private HashSet<string> SelectedRoles;
+    private List<string> SelectedRoles;
 
     protected override void OnInitialized()
     {
-        SelectedRoles = new HashSet<string>(ActiveRoles);
+        SelectedRoles = new List<string>();
     }
 
     private void OnRoleToggled(string role, bool value)
@@ -61,10 +61,6 @@
     {
         var selectedRoles = SelectedRoles.ToList();
         MudDialog.Close(DialogResult.Ok(selectedRoles));
-        if (OnRoleEditSumbit.HasDelegate)
-        {
-            OnRoleEditSumbit.InvokeAsync(selectedRoles);
-        }
     }
 
     private void Cancel() => MudDialog.Cancel();
